@@ -132,6 +132,8 @@
     <string name="history_loading_timeline_entry_failed">Kan {activity} gegevens niet laden.</string>
     <string name="history_loading_timeline_entry_failed_with_error">Kan {activity} gegevens niet laden: {error}</string>
 
+    <string name="sleep_icon_description">Slaap icoon; een wassende maan met 3 z\'s die slaperigheid duiden.</string>
+
     <!-- QR Code Login -->
     <string name="history_amount_timeline_pattern">Hoeveelheid: {amount}</string>
     <string name="login_qrcode_camera_access_needed_dialog_title">Cameratoegang nodig</string>

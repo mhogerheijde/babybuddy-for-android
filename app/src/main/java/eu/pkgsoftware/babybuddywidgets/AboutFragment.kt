@@ -150,13 +150,13 @@ class AboutFragment : BaseFragment() {
             context,
             color
         )
+
         for (icon in iconData.icons) {
             val iView = ImageView(context)
             val id = resources.getIdentifier(
                 icon, "drawable", activity!!.packageName
             )
-            var d: Drawable?
-            d = try {
+            val d: Drawable? = try {
                 ContextCompat.getDrawable(activity!!, id)
             } catch (e: NotFoundException) {
                 continue

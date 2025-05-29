@@ -149,6 +149,8 @@
 
     <string name="history_amount_timeline_pattern">Amount: {amount}</string>
 
+    <string name="sleep_icon_description">Sleep icon, showing a crescent moon with 3 z\'s indicating sleep.</string>
+
     <!-- QR Code Login -->
     <string name="login_qrcode_camera_access_needed_dialog_title">Camera access needed</string>
     <string name="login_qrcode_camera_access_needed_dialog_body">

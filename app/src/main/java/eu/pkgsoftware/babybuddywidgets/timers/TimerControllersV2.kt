@@ -44,6 +44,7 @@ import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TummyTimeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.classActivityName
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.nowServer
+import eu.pkgsoftware.babybuddywidgets.timers.utils.feedingImageResourceFor
 import eu.pkgsoftware.babybuddywidgets.utils.AsyncPromise
 import eu.pkgsoftware.babybuddywidgets.utils.AsyncPromiseFailure
 import eu.pkgsoftware.babybuddywidgets.utils.ConcurrentEventBlocker
@@ -668,33 +669,8 @@ class FeedingLoggingController(
             saveButton.visibility = View.GONE
         }
     }
-    fun feedingImageResourceFor(
-        selectedType: FeedingTypeEnum?,
-        selectedMethod: FeedingMethodEnum?,
-    ) = when (selectedType) {
-        FeedingTypeEnum.BREAST_MILK -> {
-            when (selectedMethod) {
-                FeedingMethodEnum.LEFT_BREAST -> R.drawable.pkg_breast_left
-                FeedingMethodEnum.RIGHT_BREAST -> R.drawable.pkg_breast_right
 
 
-                FeedingMethodEnum.BOTH_BREASTS,
-                null -> R.drawable.pkg_breast
-
-                FeedingMethodEnum.BOTTLE,
-                FeedingMethodEnum.PARENT_FED,
-                FeedingMethodEnum.SELF_FED,
-                    -> R.drawable.pkg_bottle
-            }
-        }
-
-        FeedingTypeEnum.SOLID_FOOD -> R.drawable.pkg_solid_food
-
-        FeedingTypeEnum.FORMULA,
-        FeedingTypeEnum.FORTIFIED_BREAST_MILK,
-        null,
-            -> R.drawable.pkg_bottle
-    }
 
     override suspend fun createEntry(timer: Timer): TimeEntry {
         return fragment.mainActivity.client.v2client.createEntry(

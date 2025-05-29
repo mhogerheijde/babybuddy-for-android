@@ -112,6 +112,7 @@
     <string name="setting_dark_light_mode">Hell/Dunkel Modus</string>
     <string name="history_loading_timeline_entry_failed">Fehler beim Laden von {activity} Einträgen</string>
     <string name="timeline_title_line_title">Ereignisse</string>
+    <string name="sleep_icon_description">Schlafsymbol; ein zunehmender Mond mit 3 Z zeigt Schläfrigkeit an.</string>
     <array name="setting_dark_light_mode_options">
         <item>Systemeinstellungen verwenden</item>
         <item>Hell</item>

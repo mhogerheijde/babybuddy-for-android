@@ -1,30 +1,33 @@
 package eu.pkgsoftware.babybuddywidgets.history
 
+import android.graphics.Color
+import android.graphics.Color.TRANSPARENT
 import android.view.MotionEvent
 import android.view.View
 import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
 import eu.pkgsoftware.babybuddywidgets.Constants
-import eu.pkgsoftware.babybuddywidgets.Constants.FeedingMethodEnum
-import eu.pkgsoftware.babybuddywidgets.Constants.FeedingTypeEnum
 import eu.pkgsoftware.babybuddywidgets.DialogCallback
 import eu.pkgsoftware.babybuddywidgets.R
 import eu.pkgsoftware.babybuddywidgets.databinding.TimelineItemBinding
-import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient
 import eu.pkgsoftware.babybuddywidgets.networking.RequestCodeFailure
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.NoteEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.SleepEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TummyTimeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.serverTimeToClientTime
+import eu.pkgsoftware.babybuddywidgets.timers.utils.feedingImageResourceFor
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.MalformedURLException
 import java.text.DateFormat
 import java.text.NumberFormat
-import java.time.ZoneId
-import kotlin.math.max
-
+import java.util.Locale
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toKotlinDuration
 
 fun interpreteAmountValue(fragment: BaseFragment, amount: Double?): String {
     if (amount == null) {
@@ -35,7 +38,7 @@ fun interpreteAmountValue(fragment: BaseFragment, amount: Double?): String {
     nf.minimumFractionDigits = 0
     val result = Phrase.from(
         fragment.resources, R.string.history_amount_timeline_pattern
-    ).put("amount", nf.format(amount)).format().toString()
+    ).put("amount", nf.format(amount)).trim()
 
     return result + "\n"
 }
@@ -69,27 +72,17 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
         get() = binding.root
 
     private fun updateUi() {
-        val entry = _entry
-        if (entry == null) {
-            binding.root.visibility = View.INVISIBLE
-        } else {
-            binding.root.visibility = View.VISIBLE
-            if (BabyBuddyClient.ACTIVITIES.TUMMY_TIME == entry.appType) {
-                configureTummyTime()
-            } else if (BabyBuddyClient.EVENTS.CHANGE == entry.appType) {
-                configureChange()
-            } else if (BabyBuddyClient.ACTIVITIES.SLEEP == entry.appType) {
-                configureSleep()
-            } else if (BabyBuddyClient.ACTIVITIES.FEEDING == entry.appType) {
-                configureFeeding()
-            } else if (BabyBuddyClient.EVENTS.NOTE == entry.appType) {
-                configureNote()
-            } else if (BabyBuddyClient.ACTIVITIES.PUMPING == entry.appType) {
-                configurePumping()
-            } else {
-                configureDefaultView()
-            }
+        when (val entry = _entry) {
+            null -> binding.root.visibility = View.INVISIBLE
+            is TummyTimeEntry -> configureTummyTime()
+            is ChangeEntry -> configureChange()
+            is SleepEntry -> configureSleep()
+            is FeedingEntry -> configureFeeding(entry)
+            is NoteEntry -> configureNote()
+            is PumpingEntry -> configurePumping(entry)
+            else -> configureDefaultView(entry)
         }
+        binding.root.visibility = View.VISIBLE
     }
 
     init {
@@ -103,150 +96,122 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
     }
 
     private fun defaultPhraseFields(phrase: Phrase): Phrase {
-        val local_start_time = serverTimeToClientTime(entry!!.start)
-        val local_end_time = serverTimeToClientTime(entry!!.end)
+        val localStartTime = serverTimeToClientTime(entry!!.start)
+        val localEndTime = serverTimeToClientTime(entry!!.end)
 
-        val start_utc = local_start_time.toInstant().atZone(ZoneId.of("UTC"))
-        val end_utc = local_end_time.toInstant().atZone(ZoneId.of("UTC"))
-        val time_diff = end_utc.toEpochSecond() - start_utc.toEpochSecond()
-        val time_diff_hours = time_diff / 3600
-        val time_diff_minutes = max(1, (time_diff % 3600) / 60)
-        val time_diff_minutes_str = time_diff_minutes.toString().padStart(2, '0')
-        val time_diff_string = "$time_diff_hours:${time_diff_minutes_str}"
+        // Leverage Kotlins internal human readable format for Duration
+        val eventDuration = java.time.Duration.between(
+            localStartTime.toInstant(),
+            localEndTime.toInstant(),
+        ).toKotlinDuration()
 
-        val start_time = TIME_FORMAT.format(local_start_time)
-        val end_time = TIME_FORMAT.format(local_end_time)
-        val opt_time_range = if (time_diff < 30) start_time else "$start_time - $end_time ($time_diff_string)"
+        val startTime = TIME_FORMAT.format(localStartTime)
+        val endTime = TIME_FORMAT.format(localEndTime)
+        val timeRange = if (eventDuration < 30.seconds) startTime else "$startTime - $endTime ($eventDuration)"
 
         return phrase
             .putOptional("type", entry!!.appType)
-            .putOptional("start_date", DATE_FORMAT.format(local_start_time))
-            .putOptional("start_time", TIME_FORMAT.format(local_start_time))
-            .putOptional("end_date", DATE_FORMAT.format(local_end_time))
-            .putOptional("end_time", TIME_FORMAT.format(local_end_time))
-            .putOptional("opt_time_range", opt_time_range)
-            .putOptional("time_diff", time_diff_string)
-            .putOptional("notes", entry!!.notes.trim { it <= ' ' })
+            .putOptional("start_date", DATE_FORMAT.format(localStartTime))
+            .putOptional("start_time", TIME_FORMAT.format(localStartTime))
+            .putOptional("end_date", DATE_FORMAT.format(localEndTime))
+            .putOptional("end_time", TIME_FORMAT.format(localEndTime))
+            .putOptional("opt_time_range", timeRange)
+            .putOptional("notes", entry!!.notes.trim())
     }
 
-    private fun configureDefaultView() {
+    private fun configureDefaultView(entry: TimeEntry) {
         hideAllSubviews()
-        binding.viewGroup.getChildAt(0).visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{type}\n{start_date}  {opt_time_range}")
-        ).format().toString()
-        binding.defaultContent.text = message
+        binding.genericType.text = entry.appType.take(1).uppercase(Locale.getDefault())
+        binding.genericType.setBackgroundColor(entry.appType.asIconColor())
+        binding.genericDetails.detailsText.text = defaultPhraseFields(
+            Phrase.from("{notes}")
+        ).trim()
+        binding.defaultView.visibility = View.VISIBLE
     }
 
     private fun configureTummyTime() {
         hideAllSubviews()
+        binding.tummyTimeDetails.dateTime.text =
+            defaultPhraseFields(Phrase.from("{start_date}  {opt_time_range}")).trim()
+        binding.tummyTimeDetails.detailsText.text =
+            defaultPhraseFields(Phrase.from("{notes}")).trim()
         binding.tummyTimeView.visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {opt_time_range}\n{notes}")
-        ).format().toString().trim { it <= ' ' }
-        binding.tummytimeMilestoneText.text = message
     }
 
     private fun configureChange() {
         hideAllSubviews()
 
         var amountString = ""
-        binding.diaperView.visibility = View.VISIBLE
+
         (entry as ChangeEntry?)?.let { change ->
             binding.diaperWetImage.visibility =
                 if (change.wet) View.VISIBLE else View.GONE
             binding.diaperSolidImage.visibility = if (change.solid) View.VISIBLE else View.GONE
 
             if (change.color.isNotEmpty()) {
-                binding.diaperColorPreview.visibility = View.VISIBLE
-
                 val colorEnumValue = Constants.SolidDiaperColorEnum.byPostName(change.color)
                 fragment.resources.getColor(colorEnumValue.colorResId, null).let { color ->
-                    binding.diaperColorPreview.setBackgroundColor(color)
+                    binding.diaperSolidImage.setBackgroundColor(color)
                 }
             } else {
-                binding.diaperColorPreview.visibility = View.GONE
+                binding.diaperSolidImage.setBackgroundColor(TRANSPARENT)
             }
 
             amountString = interpreteAmountValue(fragment, change.amount)
         }
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {start_time}\n{amount}{notes}")
-        ).put("amount", amountString).format().toString().trim { it <= ' ' }
-        binding.diaperText.text = message.trim { it <= ' ' }
+        binding.diaperDateTime.text =
+            defaultPhraseFields(Phrase.from("{start_date}  {start_time}")).trim()
+        binding.diaperText.text =
+            defaultPhraseFields(Phrase.from("{amount}{notes}"))
+                .put("amount", amountString)
+                .trim()
+
+        binding.diaperView.visibility = View.VISIBLE
     }
 
     private fun configureSleep() {
         hideAllSubviews()
+        binding.sleepTimeDetails.dateTime.text =
+            defaultPhraseFields(Phrase.from("{start_date}  {opt_time_range}"))
+                .trim()
+        binding.sleepTimeDetails.detailsText.text =
+            defaultPhraseFields(Phrase.from("{notes}"))
+                .trim()
         binding.sleepView.visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {opt_time_range}\n{notes}")
-        ).format().toString().trim { it <= ' ' }
-        binding.sleepText.text = message.trim { it <= ' ' }
     }
 
     private fun configureNote() {
         hideAllSubviews()
+        binding.noteDetails.dateTime.text = defaultPhraseFields(Phrase.from("{start_date}  {start_time}")).trim()
+        binding.noteDetails.detailsText.text = defaultPhraseFields(Phrase.from("{notes}")).trim()
         binding.noteTimeView.visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {start_time}\n{notes}")
-        ).format().toString().trim { it <= ' ' }
-        binding.noteTimeEntryText.text = message.trim { it <= ' ' }
     }
 
-    private fun configurePumping() {
+    private fun configurePumping(pumping: PumpingEntry) {
         hideAllSubviews()
-        val pumping = entry!! as PumpingEntry
+        binding.pumpingDetails.dateTime.text =
+            defaultPhraseFields(Phrase.from("{start_date}  {opt_time_range}")).trim()
+        binding.pumpingDetails.detailsText.text =
+            defaultPhraseFields(Phrase.from("{amount}{notes}"))
+                .put("amount", interpreteAmountValue(fragment, pumping.amount))
+                .trim()
         binding.pumpingTimeView.visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {opt_time_range}\n{amount}{notes}")
-        ).put(
-            "amount", interpreteAmountValue(fragment, pumping.amount)
-        ).format().toString().trim { it <= ' ' }
-        binding.pumpingTimeNotes.text = message.trim { it <= ' ' }
     }
 
-    private fun configureFeeding() {
+    private fun configureFeeding(feeding: FeedingEntry) {
         hideAllSubviews()
+        binding.feedingBreastImage.setImageResource(
+            feedingImageResourceFor(feeding.feedingType, feeding.feedingMethod)
+        )
+        binding.feedingBreastImage.visibility = View.VISIBLE
+        binding.feedingDetails.dateTime.text =
+            defaultPhraseFields(Phrase.from("{start_date}  {opt_time_range}"))
+                .trim()
+        binding.feedingDetails.detailsText.text =
+            defaultPhraseFields(Phrase.from("{amount}{notes}"))
+                .put("amount", interpreteAmountValue(fragment, feeding.amount))
+                .trim()
         binding.feedingView.visibility = View.VISIBLE
-        val feeding = entry!! as FeedingEntry
-        binding.feedingBreastImage.visibility = View.GONE
-        binding.feedingBreastLeftImage.visibility = View.GONE
-        binding.feedingBreastRightImage.visibility = View.GONE
-        binding.feedingBottleImage.visibility = View.GONE
-        binding.solidFoodImage.visibility = View.GONE
-        when (feeding.feedingType) {
-            FeedingTypeEnum.BREAST_MILK -> {
-                val feedingMethod = feeding.feedingMethod
-
-                when (feedingMethod) {
-                    FeedingMethodEnum.LEFT_BREAST ->
-                        binding.feedingBreastLeftImage.visibility = View.VISIBLE
-                    FeedingMethodEnum.RIGHT_BREAST ->
-                        binding.feedingBreastRightImage.visibility = View.VISIBLE
-                    FeedingMethodEnum.BOTH_BREASTS ->
-                        binding.feedingBreastImage.visibility = View.VISIBLE
-
-                    FeedingMethodEnum.BOTTLE,
-                    FeedingMethodEnum.PARENT_FED,
-                    FeedingMethodEnum.SELF_FED ->
-                        binding.feedingBottleImage.visibility = View.VISIBLE
-                }
-            }
-
-            FeedingTypeEnum.FORTIFIED_BREAST_MILK, FeedingTypeEnum.FORMULA -> binding.feedingBottleImage.visibility =
-                View.VISIBLE
-
-            FeedingTypeEnum.SOLID_FOOD -> binding.solidFoodImage.visibility = View.VISIBLE
-            else -> binding.solidFoodImage.visibility = View.VISIBLE
-        }
-
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {opt_time_range}\n{amount}{notes}")
-        ).put(
-            "amount", interpreteAmountValue(fragment, feeding.amount)
-        ).format().toString().trim { it <= ' ' }
-        binding.feedingText.text = message.trim { it <= ' ' }
     }
 
     private fun longClickStartStopHandler(v: View, event: MotionEvent) {
@@ -282,7 +247,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
             fragment.resources.getString(R.string.history_delete_title),
             defaultPhraseFields(
                 Phrase.from(fragment.mainActivity, R.string.history_delete_question)
-            ).format().toString().trim { it <= ' ' },
+            ).trim(),
             fragment.resources.getString(R.string.history_delete_question_delete_button),
             fragment.resources.getString(R.string.history_delete_question_cancel_button),
             object : DialogCallback {
@@ -301,7 +266,8 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                         } catch (e: IOException) {
                             e.printStackTrace()
                         }
-                    }                }
+                    }
+                }
             }
         )
     }
@@ -310,3 +276,13 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
         modifiedCallback = r
     }
 }
+
+private fun Phrase.trim(): String = this.format().trim().toString()
+
+/**
+ * Create a "random", but repeatable, color for a string.
+ * To be used as a generic background color for unknown entry types.
+ */
+private fun String.asIconColor(): Int =
+    // Black = 0xFF000000, so we force 1st byte, the alpha channel, to be 0xFF, i.e. fully opaque.
+    hashCode() or Color.BLACK

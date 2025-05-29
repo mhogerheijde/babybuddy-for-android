@@ -38,11 +38,19 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/defaultContent"
-                android:layout_width="0dp"
+                android:id="@+id/genericType"
+                android:layout_width="48dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="TextView" />
+                android:textAlignment="center"
+                android:gravity="center"
+                android:height="48dp"
+                android:text="T"
+                tools:ignore="HardcodedText" />
+
+            <include
+                android:id="@+id/genericDetails"
+                layout="@layout/timeline_item_details"
+                />
         </LinearLayout>
 
         <LinearLayout
@@ -50,7 +58,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="0"
-            android:gravity="center_vertical"
+            android:gravity="top"
             android:orientation="horizontal">
 
             <ImageView
@@ -65,13 +73,11 @@
                 app:tint="@color/fixed_color_button_text_color"
                 app:tintMode="src_in" />
 
-            <TextView
-                android:id="@+id/noteTimeEntryText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:paddingLeft="8dp"
-                android:text="TextView" />
+            <include
+                android:id="@+id/noteDetails"
+                layout="@layout/timeline_item_details"
+                />
+
         </LinearLayout>
 
         <LinearLayout
@@ -79,7 +85,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="0"
-            android:gravity="center_vertical"
+            android:gravity="top"
             android:orientation="horizontal">
 
             <ImageView
@@ -94,13 +100,11 @@
                 app:tint="@color/fixed_color_button_text_color"
                 app:tintMode="src_in" />
 
-            <TextView
-                android:id="@+id/pumpingTimeNotes"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:paddingLeft="8dp"
-                android:text="TextView" />
+            <include
+                android:id="@+id/pumpingDetails"
+                layout="@layout/timeline_item_details"
+                />
+
         </LinearLayout>
 
         <LinearLayout
@@ -108,7 +112,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:gravity="center_vertical"
+            android:gravity="top"
             android:orientation="horizontal">
 
             <ImageView
@@ -123,13 +127,11 @@
                 app:tint="@color/fixed_color_button_text_color"
                 app:tintMode="src_in" />
 
-            <TextView
-                android:id="@+id/tummytimeMilestoneText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:paddingLeft="8dp"
-                android:text="TextView" />
+            <include
+                android:id="@+id/tummy_time_details"
+                layout="@layout/timeline_item_details"
+                />
+
         </LinearLayout>
 
         <LinearLayout
@@ -152,48 +154,63 @@
                 app:tint="@color/fixed_color_button_text_color"
                 app:tintMode="src_in" />
 
-            <ImageView
-                android:id="@+id/diaperWetImage"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="0"
-                android:minHeight="16dp"
-                android:minWidth="16dp"
-                android:padding="4dp"
-                app:srcCompat="@drawable/pkg_wet"
-                app:tint="?android:attr/textColorSecondary"
-                app:tintMode="src_in" />
+                android:orientation="vertical"
+                >
+                <TextView
+                    android:id="@+id/diaperDateTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    android:text="01/01/1900 11:11 - 22:22 (11h 11m)"
+                    android:paddingLeft="4dp"
+                    android:paddingRight="4dp"
+                    android:paddingBottom="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:textSize="13sp"
+                    tools:ignore="HardcodedText" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    >
 
-            <ImageView
-                android:id="@+id/diaperSolidImage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="0"
-                android:minHeight="16dp"
-                android:minWidth="16dp"
-                android:padding="4dp"
-                app:srcCompat="@drawable/pkg_poop"
-                app:tint="?android:attr/textColorSecondary"
-                app:tintMode="src_in" />
+                    <ImageView
+                        android:id="@+id/diaperWetImage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0"
+                        android:minHeight="16dp"
+                        android:minWidth="16dp"
+                        android:padding="4dp"
+                        app:srcCompat="@drawable/pkg_wet"
+                        app:tint="?android:attr/textColorSecondary"
+                        app:tintMode="src_in" />
 
-            <ImageView
-                android:id="@+id/diaperColorPreview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="0"
-                android:minHeight="16dp"
-                android:minWidth="16dp"
-                android:layout_marginLeft="8dp"
-                android:background="@color/black"
-                app:tintMode="src_in" />
+                    <ImageView
+                        android:id="@+id/diaperSolidImage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0"
+                        android:minHeight="16dp"
+                        android:minWidth="16dp"
+                        android:padding="4dp"
+                        app:srcCompat="@drawable/pkg_poop"
+                        app:tint="?android:attr/textColorSecondary"
+                        app:tintMode="src_in" />
 
-            <TextView
-                android:id="@+id/diaperText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:paddingLeft="8dp"
-                android:text="TextView" />
+                    <TextView
+                        android:id="@+id/diaperText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:textSize="13sp"
+                        android:text="TextView" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -201,14 +218,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:gravity="center_vertical"
+            android:gravity="top"
             android:orientation="horizontal">
 
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="0"
                 android:background="@color/sleep_enabled"
+                android:contentDescription="@string/sleep_icon_description"
                 android:minHeight="48dp"
                 android:minWidth="48dp"
                 android:padding="4dp"
@@ -216,13 +233,11 @@
                 app:tint="@color/fixed_color_button_text_color"
                 app:tintMode="src_in" />
 
-            <TextView
-                android:id="@+id/sleepText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:paddingLeft="8dp"
-                android:text="TextView" />
+            <include
+                android:id="@+id/sleepTimeDetails"
+                layout="@layout/timeline_item_details"
+                />
+
         </LinearLayout>
 
         <LinearLayout
@@ -230,7 +245,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:gravity="center_vertical"
+            android:gravity="top"
             android:orientation="horizontal">
 
             <ImageView
@@ -246,65 +261,10 @@
                 app:tint="@color/fixed_color_button_text_color"
                 app:tintMode="src_in" />
 
-            <ImageView
-                android:id="@+id/feedingBreastLeftImage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="0"
-                android:background="@color/feeding_enabled"
-                android:minHeight="48dp"
-                android:minWidth="48dp"
-                android:padding="0dp"
-                app:srcCompat="@drawable/pkg_breast_left"
-                app:tint="@color/fixed_color_button_text_color"
-                app:tintMode="src_in" />
-
-            <ImageView
-                android:id="@+id/feedingBreastRightImage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="0"
-                android:background="@color/feeding_enabled"
-                android:minHeight="48dp"
-                android:minWidth="48dp"
-                android:padding="0dp"
-                app:srcCompat="@drawable/pkg_breast_right"
-                app:tint="@color/fixed_color_button_text_color"
-                app:tintMode="src_in" />
-
-            <ImageView
-                android:id="@+id/feedingBottleImage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="0"
-                android:background="@color/feeding_enabled"
-                android:minHeight="48dp"
-                android:minWidth="48dp"
-                android:padding="4dp"
-                app:srcCompat="@drawable/pkg_bottle"
-                app:tint="@color/fixed_color_button_text_color"
-                app:tintMode="src_in" />
-
-            <ImageView
-                android:id="@+id/solidFoodImage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="0"
-                android:background="@color/feeding_enabled"
-                android:minHeight="48dp"
-                android:minWidth="48dp"
-                android:padding="4dp"
-                app:srcCompat="@drawable/pkg_solid_food"
-                app:tint="@color/fixed_color_button_text_color"
-                app:tintMode="src_in" />
-
-            <TextView
-                android:id="@+id/feedingText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:paddingLeft="8dp"
-                android:text="TextView" />
+            <include
+                android:id="@+id/feedingDetails"
+                layout="@layout/timeline_item_details"
+                />
         </LinearLayout>
     </LinearLayout>
 

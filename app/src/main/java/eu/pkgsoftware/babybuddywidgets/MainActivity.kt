@@ -79,22 +79,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-    internal var internalClient: BabyBuddyClient? = null
-    val client: BabyBuddyClient
-        get() {
-            internalClient.let {
-                if (it == null) {
-                    val newClient = BabyBuddyClient(
-                        mainLooper,
-                        credStore
-                    )
-                    internalClient = newClient
-                    return newClient
-                } else {
-                    return it
-                }
-            }
-        }
+    val client: BabyBuddyClient by lazy {
+        BabyBuddyClient(
+            mainLooper,
+            credStore
+        )
+    }
 
     internal var internalTutorialAccess: TutorialAccess? = null
     val tutorialAccess: TutorialAccess
@@ -373,7 +363,6 @@ class MainActivity : AppCompatActivity() {
     fun logout() {
         credStore.clearLoginData()
         timerControls.clear()
-        internalClient = null
         // Storage gets cleaned in the resume function of the login fragment
         // because otherwise the cleanup functions of the LoggedIn fragment
         // will repopulate the storage with the old data that should be deleted
